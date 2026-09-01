@@ -1,58 +1,57 @@
 # nabu-camera
 
-Xiaomi Pad 5（`nabu`、SM8150）的实验性 Linux 前后摄像头、CN3927 对焦马达和
-用户态自动对焦支持。
+Experimental Linux support for the front and rear cameras and the CN3927 focus
+motor on Xiaomi Pad 5 (`nabu`, SM8150), together with a userspace autofocus
+prototype.
 
-本仓库与 `nabu-iris` 一样保存直接源码覆盖层，不包含完整 Linux 内核树、预编译
-UKI 或完整模块树。内核文件保留原始相对路径，可以覆盖到指定基线后审查和构建。
+This is a fork of [CFM880/nabu-camera](https://github.com/CFM880/nabu-camera).
+The camera implementation is original work by ChengFangming/CFM880; the
+SENEMOS branches only package it and adapt it to newer kernels. Please preserve
+that attribution when redistributing or reusing this work.
 
-> 这是实验性代码。替换 DTB、内核或模块可能导致设备无法启动，请准备可用的恢复
-> 方式。
+> This code is experimental. Replacing a kernel, DTB, or kernel modules can make
+> the device unbootable. Keep a tested recovery path and a known-good kernel.
 
-## 当前功能
+## Current features
 
-- Qualcomm SM8150 CAMSS、CCI、CSIPHY、CSID 和 VFE 支持
-- OV13B10 后摄，最高 4208×3120
-- OV8856 前摄
-- CN3927 VCM 对焦马达，10 位 `V4L2_CID_FOCUS_ABSOLUTE`
-- libcamera simple IPA 色彩调校文件
-- GTK4/GStreamer 自动对焦原型，支持连续对焦和点击/触摸区域对焦
-- GNOME Snapshot 50.0 高分辨率拍照与方向修正补丁
+- Qualcomm SM8150 CAMSS, CCI, CSIPHY, CSID, and VFE support
+- OV13B10 rear camera, up to 4208 x 3120
+- OV8856 front camera
+- CN3927 VCM focus motor with 10-bit `V4L2_CID_FOCUS_ABSOLUTE`
+- libcamera simple-IPA tuning files
+- GTK4/GStreamer autofocus prototype with continuous and tap-to-focus modes
+- GNOME Snapshot 50.0 patches for high-resolution capture and orientation
 
-## 目录
+## Repository layout
 
 ```text
-kernel-overlay/   按 Linux 源码路径组织的相机内核源码
-config/           可合并到现有 .config 的相机 Kconfig fragment
-camera-app/       nabu-autofocus 及 GNOME Snapshot 补丁
-camera-tuning/    libcamera simple IPA 调校文件
-scripts/          覆盖、构建和安装辅助脚本
-LICENSES/         源码 SPDX 标识对应的许可证文本
+kernel-overlay/   Camera kernel sources arranged by Linux source path
+config/           Camera Kconfig fragment for an existing .config
+camera-app/       nabu-autofocus and GNOME Snapshot patches
+camera-tuning/    libcamera simple-IPA tuning files
+scripts/          Overlay, build, and installation helpers
+LICENSES/         License texts referenced by source SPDX identifiers
 ```
 
-## 设备树追加模式
+## Device-tree overlay model
 
-仓库不覆盖 `sm8150.dtsi`，也不修改原始
-`sm8150-xiaomi-nabu.dts`。相机设备树由两个新文件组成：
+The repository does not replace `sm8150.dtsi` or modify the original
+`sm8150-xiaomi-nabu.dts`. Camera nodes are composed through:
 
 ```text
 sm8150-xiaomi-nabu-camera.dts
-  ├─ include sm8150-xiaomi-nabu.dts
-  └─ include sm8150-xiaomi-nabu-camera.dtsi
+  |-- include sm8150-xiaomi-nabu.dts
+  `-- include sm8150-xiaomi-nabu-camera.dtsi
 ```
 
-因此构建和启动时必须使用派生 DTB：
+Build and boot with `qcom/sm8150-xiaomi-nabu-camera.dtb`. When `nabu-iris` is
+also installed, use the combined
+`qcom/sm8150-xiaomi-nabu-iris-camera.dtb` instead.
 
-```text
-qcom/sm8150-xiaomi-nabu-camera.dtb
-```
+## Applying to a kernel tree
 
-这种布局允许原 nabu DTS 继续由上游维护，而相机节点保持独立。如果同时安装
-`nabu-iris`，两个追加文件由显式的组合 DTS 汇总。
-
-## 放入内核树
-
-准备位于精确基线的 Linux 源码树：
+Prepare a kernel tree at the baseline documented in [SOURCE.md](SOURCE.md), then
+apply the overlay:
 
 ```sh
 git clone https://gitlab.postmarketos.org/soc/qualcomm-sm8150/linux.git linux
@@ -60,64 +59,63 @@ git -C linux checkout 5181e1358ddd6ea8028e841d928942373e6aebc8
 ./scripts/apply-overlay.sh ./linux
 ```
 
-安装脚本允许目标树存在不重叠的修改，所以可以先应用 `nabu-iris`。如果某个相机
-覆盖目标已经被其他工作修改，脚本会停止，不会静默覆盖。
+The helper permits non-overlapping changes, including a previously applied
+`nabu-iris` overlay. It stops instead of silently overwriting a camera target
+that has already been changed.
 
-## 构建
+## Building
 
-输出目录需要已有适用于 nabu 的 `.config`。构建脚本先用内核自带的
-`merge_config.sh` 合并 `config/nabu-camera.config`，不会替换主 defconfig：
+The output directory must already contain a working Nabu `.config`. The build
+helper merges `config/nabu-camera.config` with the kernel's `merge_config.sh`:
 
 ```sh
 ./scripts/build.sh ./linux ./linux/out
 ```
 
-也可以只合并配置：
+To merge only the configuration fragment:
 
 ```sh
 ./scripts/merge-config.sh ./linux ./linux/out
 ```
 
-脚本构建模块以及：
+The resulting modules and DTB must exactly match the running kernel version,
+configuration, and symbols.
 
-```text
-linux/out/arch/arm64/boot/dts/qcom/sm8150-xiaomi-nabu-camera.dtb
-```
+## Installing modules and tuning files
 
-如果目标树同时安装了 `nabu-iris`，脚本会自动改为构建：
-
-```text
-linux/out/arch/arm64/boot/dts/qcom/sm8150-xiaomi-nabu-iris-camera.dtb
-```
-
-构建产物必须与正在运行的内核版本、配置和符号完全匹配。
-
-## 安装模块和调校文件
-
-确认 `BUILD_DIR` 指向内核输出目录后执行：
+After verifying that `BUILD_DIR` points to the correct kernel output:
 
 ```sh
 sudo BUILD_DIR=$PWD/linux/out ./scripts/install-camera-modules.sh
 ```
 
-脚本安装 CCI、CAMSS、CN3927 模块和两个 libcamera 调校文件，并保留可回滚备份。
-安装后需要重启。回滚命令为：
+The helper installs CCI, CAMSS, and CN3927 modules plus both libcamera tuning
+files, while retaining rollback copies. A reboot is required. To roll back:
 
 ```sh
 sudo ./scripts/install-camera-modules.sh --rollback
 ```
 
-## 自动对焦应用
+## Autofocus application
 
 ```sh
 make -C camera-app
 camera-app/nabu-autofocus
 ```
 
-点击或触摸预览可以针对该区域对焦；`--once` 执行一次无窗口自动对焦。完整参数见
-[`camera-app/README.md`](camera-app/README.md)。
+Click or touch the preview to focus on that region. `--once` performs one
+windowless autofocus operation. See
+[`camera-app/README.md`](camera-app/README.md) for all options.
 
-## 来源和许可证
+## Fedora and Linux 7.2.2
 
-内核基线、原始提交和拆分说明见 [`SOURCE.md`](SOURCE.md)。各文件按自身 SPDX
-标识授权；Linux 许可证说明见 `COPYING` 与 `LICENSES/`。
+The `senemos-fedora-copr` branch contains `nabu-camera-support.spec` and an SCM
+SRPM target for automatic COPR builds. The Linux 7.2.2 kernel integration lives
+in [MCC45TR/nabu-linux-kernel](https://github.com/MCC45TR/nabu-linux-kernel/tree/senemos-linux-7.2.2-camera-iris).
+
+## Sources and licenses
+
+The exact kernel baseline, source revisions, and split history are documented
+in [SOURCE.md](SOURCE.md). Each source file remains under its own SPDX license;
+see `COPYING` and `LICENSES/`. Authorship and license notices from the original
+project must remain intact.
