@@ -140,7 +140,7 @@ grep -Fq 'while (!queuedRequests_.empty())' src/libcamera/pipeline/simple/simple
 grep -Fq '{ "ov13b10", {' src/libcamera/sensor/camera_sensor_properties.cpp
 grep -Fq '{ "ov8856", {' src/libcamera/sensor/camera_sensor_properties.cpp
 grep -Fq '.unitCellSize = { 1120, 1120 }' src/libcamera/sensor/camera_sensor_properties.cpp
-grep -Fq 'FlashControl::updateFlashControls(sensor_->flash(), controlInfo_)' src/libcamera/pipeline/simple/simple.cpp
+grep -Fq 'FlashControl::updateFlashControls(sensor_->flash(), controls)' src/libcamera/pipeline/simple/simple.cpp
 grep -Fq 'FlashControl::handleFlashControls(data->sensor_->flash()' src/libcamera/pipeline/simple/simple.cpp
 grep -Fq 'setMode(CameraFlash::Mode::None)' src/libcamera/pipeline/simple/simple.cpp
 grep -Fq 'removeMessages(debayer_.get())' src/libcamera/software_isp/software_isp.cpp
