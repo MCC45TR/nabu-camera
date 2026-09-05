@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Nabu Autofocus
+GenericName=Camera Focus Control
+Comment=Focus the rear camera using the CN3927 lens actuator
+Exec=nabu-autofocus
+Icon=camera-photo
+Categories=Graphics;Photography;
+Keywords=camera;focus;autofocus;nabu;
+Terminal=false
+

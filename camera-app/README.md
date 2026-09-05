@@ -29,6 +29,15 @@ To focus once without opening a preview window:
 camera-app/nabu-autofocus --once
 ```
 
+For diagnostics and calibration, a raw CN3927 actuator position can be set
+without opening the camera.  This is deliberately labelled as a raw value;
+until the module calibration data is available it must not be presented as a
+calibrated libcamera `LensPosition` value in dioptres.
+
+```sh
+camera-app/nabu-autofocus --position 512
+```
+
 An image-space focus point can also be supplied explicitly. For the 640x480
 analysis stream, this example focuses a region near the upper-left quarter:
 

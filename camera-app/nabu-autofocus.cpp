@@ -466,12 +466,14 @@ std::optional<FocusPoint> parse_focus_point(const char *value)
 void usage(const char *program)
 {
 	std::cout << "Usage: " << program << " [--once] [--no-preview] "
-		     "[--point X,Y] [--camera NAME] [--lens DEVICE]\n"
+		     "[--point X,Y] [--position RAW] [--camera NAME] "
+		     "[--lens DEVICE]\n"
 		     "\n"
 		     "Default: continuous autofocus with a preview window.\n"
 		     "  --once       Focus once and exit.\n"
 		     "  --no-preview Do not create a preview window.\n"
-		     "  --point X,Y  Focus a 30% region around an image coordinate.\n";
+		     "  --point X,Y  Focus a 30% region around an image coordinate.\n"
+		     "  --position N Set the raw CN3927 position (0..1023) and exit.\n";
 }
 
 } // namespace
@@ -483,6 +485,7 @@ int main(int argc, char **argv)
 	std::string camera_name = kRearCamera;
 	std::optional<std::string> lens_path;
 	std::optional<FocusPoint> initial_focus_point;
+	std::optional<int> manual_position;
 
 	for (int i = 1; i < argc; i++) {
 		const std::string argument(argv[i]);
@@ -498,6 +501,16 @@ int main(int argc, char **argv)
 				std::cerr << "Invalid focus point; use X,Y image coordinates.\n";
 				return 2;
 			}
+		} else if (argument == "--position" && i + 1 < argc) {
+			char trailing;
+			int position;
+
+			if (std::sscanf(argv[++i], "%d%c", &position, &trailing) != 1 ||
+			    position < kFocusMin || position > kFocusMax) {
+				std::cerr << "Invalid position; use an integer from 0 to 1023.\n";
+				return 2;
+			}
+			manual_position = position;
 		} else if (argument == "--camera" && i + 1 < argc) {
 			camera_name = argv[++i];
 		} else if (argument == "--lens" && i + 1 < argc) {
@@ -527,6 +540,11 @@ int main(int argc, char **argv)
 		std::cout << "Rear camera: " << camera_name << '\n'
 			  << "Lens device: " << *lens_path << '\n';
 		Lens lens(*lens_path);
+		if (manual_position) {
+			lens.set_focus(*manual_position);
+			std::cout << "Focus position=" << lens.position() << "\n";
+			return 0;
+		}
 		CameraFrames frames(camera_name, preview);
 		if (initial_focus_point) {
 			frames.set_focus_point(*initial_focus_point);
