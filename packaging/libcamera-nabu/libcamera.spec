@@ -1,6 +1,6 @@
 Name:           libcamera
 Version:        0.7.2
-Release:        4.nabu2%{?dist}
+Release:        5.nabu1%{?dist}
 Summary:        A library to support complex camera ISPs
 License:        LGPL-2.1-or-later
 URL:            https://libcamera.org/
@@ -12,6 +12,7 @@ Patch01:        0001-disable-rpi-pisp.patch
 Patch02:        0002-fix-ov01a10-flickering.patch
 Patch03:        0001-ipa-add-OV13B10-and-OV8856-gain-helpers.patch
 Patch04:        0002-pipeline-simple-cancel-metadata-only-requests-on-sto.patch
+Patch05:        0003-sensor-add-OV13B10-and-OV8856-properties.patch
 ExcludeArch:    s390x ppc64le
 
 BuildRequires:  gcc-c++
@@ -129,6 +130,9 @@ install -D -m 644 %SOURCE3 %{buildroot}/%{_udevrulesdir}/70-libcamera.rules
 grep -Fq 'REGISTER_CAMERA_SENSOR_HELPER("ov13b10"' src/ipa/libipa/camera_sensor_helper.cpp
 grep -Fq 'REGISTER_CAMERA_SENSOR_HELPER("ov8856"' src/ipa/libipa/camera_sensor_helper.cpp
 grep -Fq 'while (!queuedRequests_.empty())' src/libcamera/pipeline/simple/simple.cpp
+grep -Fq '{ "ov13b10", {' src/libcamera/sensor/camera_sensor_properties.cpp
+grep -Fq '{ "ov8856", {' src/libcamera/sensor/camera_sensor_properties.cpp
+grep -Fq '.unitCellSize = { 1120, 1120 }' src/libcamera/sensor/camera_sensor_properties.cpp
 
 %files
 %license COPYING.rst LICENSES/LGPL-2.1-or-later.txt
@@ -169,6 +173,9 @@ grep -Fq 'while (!queuedRequests_.empty())' src/libcamera/pipeline/simple/simple
 %{python3_sitearch}/*
 
 %changelog
+* Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-5.nabu1
+- Publish OV13B10 and OV8856 unit-cell and standard test-pattern properties.
+
 * Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-4.nabu1
 - Add gain helpers for OV13B10 and OV8856.
 - Cancel metadata-only simple-pipeline requests cleanly during camera stop.

@@ -1,0 +1,56 @@
+From: mcc45tr <mcc45tr@gmail.com>
+Subject: [PATCH] libcamera: sensor: add OV13B10 and OV8856 properties
+
+Both sensors use 1.12 um pixels.  Publish the standard colour-bar mode that
+is exposed as menu item 1 by their V4L2 drivers.  The remaining sensor test
+patterns have no exact libcamera control equivalent.
+
+Do not invent sensor control delays: leaving the delay table empty retains
+libcamera's explicit, conservative legacy fallback.
+---
+ src/libcamera/sensor/camera_sensor_properties.cpp | 24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+diff --git a/src/libcamera/sensor/camera_sensor_properties.cpp b/src/libcamera/sensor/camera_sensor_properties.cpp
+--- a/src/libcamera/sensor/camera_sensor_properties.cpp
++++ b/src/libcamera/sensor/camera_sensor_properties.cpp
+@@ -335,6 +335,18 @@ const CameraSensorProperties *CameraSensorProperties::get(const std::string &sen
+ 				.hblankDelay = 3
+ 			},
+ 		} },
++		{ "ov13b10", {
++			.unitCellSize = { 1120, 1120 },
++			.testPatternModes = {
++				{ controls::draft::TestPatternModeOff, 0 },
++				{ controls::draft::TestPatternModeColorBars, 1 },
++				/*
++				 * No corresponding standard test pattern modes for
++				 * "Vertical Color Bar Type 2" through Type 4.
++				 */
++			},
++			.sensorDelays = { },
++		} },
+ 		{ "ov2685", {
+ 			.unitCellSize = { 1750, 1750 },
+ 			.testPatternModes = {
+@@ -456,6 +468,18 @@ const CameraSensorProperties *CameraSensorProperties::get(const std::string &sen
+ 				.hblankDelay = 2
+ 			},
+ 		} },
++		{ "ov8856", {
++			.unitCellSize = { 1120, 1120 },
++			.testPatternModes = {
++				{ controls::draft::TestPatternModeOff, 0 },
++				{ controls::draft::TestPatternModeColorBars, 1 },
++				/*
++				 * The three directional darker color-bar patterns do
++				 * not have matching standard libcamera modes.
++				 */
++			},
++			.sensorDelays = { },
++		} },
+ 		{ "ov8858", {
+ 			.unitCellSize = { 1120, 1120 },
+ 			.testPatternModes = {
+-- 
+2.51.0
