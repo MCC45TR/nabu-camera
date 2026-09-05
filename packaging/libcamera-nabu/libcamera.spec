@@ -1,6 +1,6 @@
 Name:           libcamera
 Version:        0.7.2
-Release:        6.nabu1%{?dist}
+Release:        7.nabu1%{?dist}
 Summary:        A library to support complex camera ISPs
 License:        LGPL-2.1-or-later
 URL:            https://libcamera.org/
@@ -18,6 +18,7 @@ Patch07:        0002-libcamera-Add-support-for-camera-flash-devices.patch
 Patch08:        0003-Documentation-Add-flash-driver-requirements.patch
 Patch09:        0004-libcamera-Add-flash-helpers-for-pipeline-handlers.patch
 Patch10:        0005-pipeline-simple-expose-and-safely-reset-camera-flash.patch
+Patch11:        0006-software-isp-discard-stale-debayer-work-on-stop.patch
 ExcludeArch:    s390x ppc64le
 
 BuildRequires:  gcc-c++
@@ -142,6 +143,7 @@ grep -Fq '.unitCellSize = { 1120, 1120 }' src/libcamera/sensor/camera_sensor_pro
 grep -Fq 'FlashControl::updateFlashControls(sensor_->flash(), controlInfo_)' src/libcamera/pipeline/simple/simple.cpp
 grep -Fq 'FlashControl::handleFlashControls(data->sensor_->flash()' src/libcamera/pipeline/simple/simple.cpp
 grep -Fq 'setMode(CameraFlash::Mode::None)' src/libcamera/pipeline/simple/simple.cpp
+grep -Fq 'removeMessages(debayer_.get())' src/libcamera/software_isp/software_isp.cpp
 
 %files
 %license COPYING.rst LICENSES/LGPL-2.1-or-later.txt
@@ -182,6 +184,10 @@ grep -Fq 'setMode(CameraFlash::Mode::None)' src/libcamera/pipeline/simple/simple
 %{python3_sitearch}/*
 
 %changelog
+* Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-7.nabu1
+- Drop stale asynchronous debayer work when a camera session stops.
+- Prevent old software-ISP buffers from being processed after camera switch.
+
 * Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-6.nabu1
 - Add the upstream-proposed generic libcamera flash API and driver contract.
 - Expose linked flash controls through the simple Qualcomm CAMSS pipeline.

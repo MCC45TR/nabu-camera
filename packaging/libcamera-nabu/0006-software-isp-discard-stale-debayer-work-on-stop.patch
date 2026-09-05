@@ -1,0 +1,31 @@
+From fcae7ad1e4698edab88e03e64da33199fa548e43 Mon Sep 17 00:00:00 2001
+From: mcc45tr <mcc45tr@gmail.com>
+Date: Sun, 6 Sep 2026 02:44:40 +0300
+Subject: [PATCH] software_isp: discard stale debayer work on stop
+
+---
+ src/libcamera/software_isp/software_isp.cpp | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/src/libcamera/software_isp/software_isp.cpp b/src/libcamera/software_isp/software_isp.cpp
+index c73a16ce0..55dde005d 100644
+--- a/src/libcamera/software_isp/software_isp.cpp
++++ b/src/libcamera/software_isp/software_isp.cpp
+@@ -401,6 +401,14 @@ void SoftwareIsp::stop()
+ 	ispWorkerThread_.exit();
+ 	ispWorkerThread_.wait();
+ 
++	/*
++	 * A queued Debayer::process() invocation can survive a stop when the
++	 * blocking Debayer::stop() invocation overtakes asynchronous work.  The
++	 * buffers referenced by that work belong to the old camera session and
++	 * may have been released before the worker starts again.
++	 */
++	ispWorkerThread_.removeMessages(debayer_.get());
++
+ 	Thread::current()->dispatchMessages(Message::Type::InvokeMessage, this);
+ 
+ 	ipa_->stop();
+-- 
+2.55.0
+
