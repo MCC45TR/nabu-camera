@@ -1,0 +1,42 @@
+From 4eff564afd1908c204ede1ee84d644cb4d03fd02 Mon Sep 17 00:00:00 2001
+From: mcc45tr <mcc45tr@gmail.com>
+Date: Sun, 6 Sep 2026 00:39:06 +0300
+Subject: [PATCH 2/2] pipeline: simple: cancel metadata-only requests on stop
+
+---
+ src/libcamera/pipeline/simple/simple.cpp | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/src/libcamera/pipeline/simple/simple.cpp b/src/libcamera/pipeline/simple/simple.cpp
+index e26f438..aae3daa 100644
+--- a/src/libcamera/pipeline/simple/simple.cpp
++++ b/src/libcamera/pipeline/simple/simple.cpp
+@@ -981,6 +981,15 @@ void SimpleCameraData::clearIncompleteRequests()
+ 		pipe()->cancelRequest(conversionQueue_.front().request);
+ 		conversionQueue_.pop();
+ 	}
++
++	/*
++	 * Software ISP output completion can leave a request waiting solely for
++	 * metadata when stop() tears down the IPA worker. It has no pending buffers
++	 * at this point, but still belongs to the pipeline handler. Return every
++	 * such request as cancelled before PipelineHandler::stop() checks its queue.
++	 */
++	while (!queuedRequests_.empty())
++		pipe()->cancelRequest(queuedRequests_.front());
+ }
+ 
+ void SimpleCameraData::tryCompleteRequest(Request *request)
+@@ -1727,8 +1736,8 @@ void SimplePipelineHandler::stopDevice(Camera *camera)
+ 
+ 	video->bufferReady.disconnect(data, &SimpleCameraData::imageBufferReady);
+ 
+-	data->frameInfo_.clear();
+ 	data->clearIncompleteRequests();
++	data->frameInfo_.clear();
+ 	data->conversionBuffers_.clear();
+ 
+ 	releasePipeline(data);
+-- 
+2.55.0
+

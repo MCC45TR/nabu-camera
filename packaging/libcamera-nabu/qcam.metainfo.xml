@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>qcam.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPLv-2.0</project_license>
+  <name>QCam</name>
+  <summary>Take photos with cameras exposed by libcamera</summary>
+  <description><p>A demo application for cameras exposed by libcamera.</p></description>
+  <url type="homepage">https://libcamera.org/</url>
+  <url type="bugtracker">https://bugs.libcamera.org/</url>
+  <url type="help">https://libcamera.org/docs.html/</url>
+</component>

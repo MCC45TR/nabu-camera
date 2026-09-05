@@ -1,0 +1,4 @@
+ddd2f9fd1a1a41ccc1065368e6f91c8edce3d836fcce9805d86a7f9f387ebffb  0001-disable-rpi-pisp.patch
+6941b3c7ff4cd245cfb2c4bc13458b501788e9e43c5af5ad11825635db5e920f  0001-ipa-add-OV13B10-and-OV8856-gain-helpers.patch
+decdba9c4fec84db065bdb99d6d03f14dcf5bec99347ff841f8781ff9805eebf  0002-fix-ov01a10-flickering.patch
+88dc2945598dd78877400f4e3d7f62947e7e6d9356493ee689bae092cf009692  0002-pipeline-simple-cancel-metadata-only-requests-on-sto.patch

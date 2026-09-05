@@ -1,0 +1,52 @@
+From 783ef44a13611affa026284ad1c82756874c38b1 Mon Sep 17 00:00:00 2001
+From: mcc45tr <mcc45tr@gmail.com>
+Date: Sun, 6 Sep 2026 00:39:06 +0300
+Subject: [PATCH 1/2] ipa: add OV13B10 and OV8856 gain helpers
+
+---
+ src/ipa/libipa/camera_sensor_helper.cpp | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+diff --git a/src/ipa/libipa/camera_sensor_helper.cpp b/src/ipa/libipa/camera_sensor_helper.cpp
+index 9457d62..0b48f0f 100644
+--- a/src/ipa/libipa/camera_sensor_helper.cpp
++++ b/src/ipa/libipa/camera_sensor_helper.cpp
+@@ -688,6 +688,17 @@ public:
+ };
+ REGISTER_CAMERA_SENSOR_HELPER("ov08x40", CameraSensorHelperOv08x40)
+ 
++class CameraSensorHelperOv13b10 : public CameraSensorHelper
++{
++public:
++	CameraSensorHelperOv13b10()
++	{
++		/* The sensor gain register uses 0x80 as unity gain. */
++		gain_ = AnalogueGainLinear{ 1, 0, 0, 128 };
++	}
++};
++REGISTER_CAMERA_SENSOR_HELPER("ov13b10", CameraSensorHelperOv13b10)
++
+ class CameraSensorHelperOv2685 : public CameraSensorHelper
+ {
+ public:
+@@ -807,6 +818,17 @@ public:
+ };
+ REGISTER_CAMERA_SENSOR_HELPER("ov8858", CameraSensorHelperOv8858)
+ 
++class CameraSensorHelperOv8856 : public CameraSensorHelper
++{
++public:
++	CameraSensorHelperOv8856()
++	{
++		/* The sensor gain register uses 0x80 as unity gain. */
++		gain_ = AnalogueGainLinear{ 1, 0, 0, 128 };
++	}
++};
++REGISTER_CAMERA_SENSOR_HELPER("ov8856", CameraSensorHelperOv8856)
++
+ class CameraSensorHelperOv8865 : public CameraSensorHelper
+ {
+ public:
+-- 
+2.55.0
+
