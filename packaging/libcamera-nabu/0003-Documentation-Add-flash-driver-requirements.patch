@@ -1,0 +1,86 @@
+From 60d44b329e24a924e5859000df7a6ca3b813f7a3 Mon Sep 17 00:00:00 2001
+From: Matthias Fend <matthias.fend@emfend.at>
+Date: Fri, 12 Sep 2025 09:13:22 +0200
+Subject: [PATCH 3/5] Documentation: Add flash driver requirements
+
+Document the requirements for the v4l2 flash device drivers required by
+libcamera.
+
+Signed-off-by: Matthias Fend <matthias.fend@emfend.at>
+Reviewed-by: Isaac Scott <isaac.scott@ideasonboard.com>
+---
+ Documentation/flash_driver_requirements.rst | 37 +++++++++++++++++++++
+ Documentation/index.rst                     |  1 +
+ Documentation/meson.build                   |  1 +
+ 3 files changed, 39 insertions(+)
+ create mode 100644 Documentation/flash_driver_requirements.rst
+
+diff --git a/Documentation/flash_driver_requirements.rst b/Documentation/flash_driver_requirements.rst
+new file mode 100644
+index 00000000..57a7537b
+--- /dev/null
++++ b/Documentation/flash_driver_requirements.rst
+@@ -0,0 +1,37 @@
++.. SPDX-License-Identifier: CC-BY-SA-4.0
++
++.. _flash-driver-requirements:
++
++Flash Driver Requirements
++=========================
++
++libcamera handles V4L2 flash devices in the CameraFlash class and defines
++a consistent interface through its API towards other library components.
++
++The CameraFlash class uses the V4L2 subdev kernel API to interface with the
++camera flash through a sub-device exposed to userspace by the V4L2 flash driver.
++
++In order for libcamera to be fully operational and provide all the required
++information to interface with the camera flash to applications and pipeline
++handlers, the driver must support a set of mandatory features.
++
++Mandatory Requirements
++----------------------
++
++The flash driver is assumed to be fully compliant with the V4L2 specification.
++
++The flash driver shall support the following V4L2 controls:
++
++* `V4L2_CID_FLASH_LED_MODE`_
++* `V4L2_CID_FLASH_STROBE_SOURCE`_
++* `V4L2_CID_FLASH_STROBE`_
++* `V4L2_CID_FLASH_TIMEOUT`_
++* `V4L2_CID_FLASH_INTENSITY`_
++* `V4L2_CID_FLASH_TORCH_INTENSITY`_
++
++.. _V4L2_CID_FLASH_LED_MODE: https://www.kernel.org/doc/html/latest/userspace-api/media/v4l/ext-ctrls-flash.html
++.. _V4L2_CID_FLASH_STROBE_SOURCE: https://www.kernel.org/doc/html/latest/userspace-api/media/v4l/ext-ctrls-flash.html
++.. _V4L2_CID_FLASH_STROBE: https://www.kernel.org/doc/html/latest/userspace-api/media/v4l/ext-ctrls-flash.html
++.. _V4L2_CID_FLASH_TIMEOUT: https://www.kernel.org/doc/html/latest/userspace-api/media/v4l/ext-ctrls-flash.html
++.. _V4L2_CID_FLASH_INTENSITY: https://www.kernel.org/doc/html/latest/userspace-api/media/v4l/ext-ctrls-flash.html
++.. _V4L2_CID_FLASH_TORCH_INTENSITY: https://www.kernel.org/doc/html/latest/userspace-api/media/v4l/ext-ctrls-flash.html
+diff --git a/Documentation/index.rst b/Documentation/index.rst
+index e40cd0c9..dcb3daec 100644
+--- a/Documentation/index.rst
++++ b/Documentation/index.rst
+@@ -33,5 +33,6 @@
+    :maxdepth: 1
+    :caption: For System Integrators
+ 
++   Flash driver requirements <flash_driver_requirements>
+    Lens driver requirements <lens_driver_requirements>
+    Sensor driver requirements <sensor_driver_requirements>
+diff --git a/Documentation/meson.build b/Documentation/meson.build
+index a156bd0b..99364878 100644
+--- a/Documentation/meson.build
++++ b/Documentation/meson.build
+@@ -157,6 +157,7 @@ if sphinx.found()
+         'contributing.rst',
+         'design/ae.rst',
+         'feature_requirements.rst',
++        'flash_driver_requirements.rst',
+         'guides/application-developer.rst',
+         'guides/ipa.rst',
+         'guides/pipeline-handler.rst',
+-- 
+2.55.0
+

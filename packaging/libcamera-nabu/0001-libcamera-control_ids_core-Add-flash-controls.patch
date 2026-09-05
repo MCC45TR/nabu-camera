@@ -1,0 +1,101 @@
+From 0aa05b2812881931b19002478ef8e7659766c9b6 Mon Sep 17 00:00:00 2001
+From: Matthias Fend <matthias.fend@emfend.at>
+Date: Fri, 12 Sep 2025 09:13:20 +0200
+Subject: [PATCH 1/5] libcamera: control_ids_core: Add flash controls
+
+Define a set of controls to control camera flash devices.
+
+Signed-off-by: Matthias Fend <matthias.fend@emfend.at>
+---
+ src/libcamera/control_ids_core.yaml | 76 +++++++++++++++++++++++++++++
+ 1 file changed, 76 insertions(+)
+
+diff --git a/src/libcamera/control_ids_core.yaml b/src/libcamera/control_ids_core.yaml
+index 89991d03..6995f28f 100644
+--- a/src/libcamera/control_ids_core.yaml
++++ b/src/libcamera/control_ids_core.yaml
+@@ -1375,5 +1375,81 @@ controls:
+ 
+         The nominal range is [-180, 180], where 0° leaves hues unchanged and the
+         range wraps around continuously, with 180° == -180°.
++  - FlashMode:
++      type: int32_t
++      direction: inout
++      description: |
++        Flash operation mode.
++      enum:
++        - name: FlashModeNone
++          value: 0
++          description: |
++            Flash is off and inactive.
++        - name: FlashModeFlash
++          value: 1
++          description: |
++            The flash is active, but will only be switched on for a short time
++            by means of a trigger (software or external strobe). The maximum
++            switch-on time is limited by the FlashTimeout setting.
++        - name: FlashModeTorch
++          value: 2
++          description: |
++            The flash is continuously on and active. Commonly referred to as
++            torch or video light mode.
+ 
++  - FlashIntensity:
++      type: int32_t
++      direction: inout
++      description: |
++        Flash intensity in mA. Used when the flash is operated in flash mode.
++
++  - FlashTimeout:
++      type: int32_t
++      direction: inout
++      description: |
++        Flash timeout in us. Determines the maximum flash switch-on time. After
++        this time has elapsed, the flash is switched off by the hardware, even
++        if a strobe is still active.
++
++  - FlashStrobeSource:
++      type: int32_t
++      direction: inout
++      description: |
++        Flash strobe source.
++      enum:
++        - name: FlashStrobeSourceSoftware
++          value: 0
++          description: |
++            The strobe signal is controlled via software using the FlashStrobe
++            control.
++        - name: FlashStrobeSourceExternal
++          value: 1
++          description: |
++            The strobe signal is controlled by an external source. Typically,
++            this is done on the hardware by connecting the strobe source
++            directly to the flash controller.
++
++  - FlashStrobe:
++      type: int32_t
++      direction: in
++      description: |
++        Start/stop flash strobe. Only possible if FlashStrobeSourceSoftware is
++        selcted as FlashStrobeSource.
++
++      enum:
++        - name: FlashStrobeStart
++          value: 0
++          description: |
++            Start flash strobe.
++
++        - name: FlashStrobeStop
++          value: 1
++          description: |
++            Stop flash strobe.
++
++  - FlashTorchIntensity:
++      type: int32_t
++      direction: inout
++      description: |
++        Torch intensity in mA. Used when the flash is operated in torch mode.
+ ...
+-- 
+2.55.0
+

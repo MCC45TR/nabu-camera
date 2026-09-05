@@ -1,6 +1,6 @@
 Name:           libcamera
 Version:        0.7.2
-Release:        5.nabu1%{?dist}
+Release:        6.nabu1%{?dist}
 Summary:        A library to support complex camera ISPs
 License:        LGPL-2.1-or-later
 URL:            https://libcamera.org/
@@ -13,6 +13,11 @@ Patch02:        0002-fix-ov01a10-flickering.patch
 Patch03:        0001-ipa-add-OV13B10-and-OV8856-gain-helpers.patch
 Patch04:        0002-pipeline-simple-cancel-metadata-only-requests-on-sto.patch
 Patch05:        0003-sensor-add-OV13B10-and-OV8856-properties.patch
+Patch06:        0001-libcamera-control_ids_core-Add-flash-controls.patch
+Patch07:        0002-libcamera-Add-support-for-camera-flash-devices.patch
+Patch08:        0003-Documentation-Add-flash-driver-requirements.patch
+Patch09:        0004-libcamera-Add-flash-helpers-for-pipeline-handlers.patch
+Patch10:        0005-pipeline-simple-expose-and-safely-reset-camera-flash.patch
 ExcludeArch:    s390x ppc64le
 
 BuildRequires:  gcc-c++
@@ -51,7 +56,8 @@ Obsoletes:      libcamera-doc < 0.6.0
 %description
 libcamera provides a userspace camera stack. This Fedora-compatible build adds
 generic OV13B10 and OV8856 gain conversion and fixes request cancellation in
-the simple software-ISP pipeline used by Qualcomm CAMSS.
+the simple software-ISP pipeline used by Qualcomm CAMSS.  It also exposes the
+standard libcamera flash controls for media-controller-linked flash devices.
 
 %package devel
 Summary: Development package for %{name}
@@ -133,6 +139,9 @@ grep -Fq 'while (!queuedRequests_.empty())' src/libcamera/pipeline/simple/simple
 grep -Fq '{ "ov13b10", {' src/libcamera/sensor/camera_sensor_properties.cpp
 grep -Fq '{ "ov8856", {' src/libcamera/sensor/camera_sensor_properties.cpp
 grep -Fq '.unitCellSize = { 1120, 1120 }' src/libcamera/sensor/camera_sensor_properties.cpp
+grep -Fq 'FlashControl::updateFlashControls(sensor_->flash(), controlInfo_)' src/libcamera/pipeline/simple/simple.cpp
+grep -Fq 'FlashControl::handleFlashControls(data->sensor_->flash()' src/libcamera/pipeline/simple/simple.cpp
+grep -Fq 'setMode(CameraFlash::Mode::None)' src/libcamera/pipeline/simple/simple.cpp
 
 %files
 %license COPYING.rst LICENSES/LGPL-2.1-or-later.txt
@@ -173,6 +182,12 @@ grep -Fq '.unitCellSize = { 1120, 1120 }' src/libcamera/sensor/camera_sensor_pro
 %{python3_sitearch}/*
 
 %changelog
+* Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-6.nabu1
+- Add the upstream-proposed generic libcamera flash API and driver contract.
+- Expose linked flash controls through the simple Qualcomm CAMSS pipeline.
+- Force flash and torch off whenever a camera stream stops.
+- Correct flash-current units and failed-control read handling.
+
 * Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-5.nabu1
 - Publish OV13B10 and OV8856 unit-cell and standard test-pattern properties.
 
