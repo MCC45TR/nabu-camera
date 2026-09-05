@@ -7,4 +7,4 @@ c01281e7ffea4d3d28319e27367e452df3120963dfc8dd10caaa9cd087ab66eb  0003-sensor-ad
 190132de2def21755bc17243fa64f42656a7d413dfd7913aecf258efdb28c47d  0002-libcamera-Add-support-for-camera-flash-devices.patch
 2147d49beb35bdc6a2d330df8d499f317c6332b5ad1e31f1052cd137a837c768  0003-Documentation-Add-flash-driver-requirements.patch
 6a597d1f9cfd27062dcb582b7ac82b2b449eecd22beca3f26f7d01e72e054623  0004-libcamera-Add-flash-helpers-for-pipeline-handlers.patch
-aea99bbb20e3aab3dd2389b55aa87ca3f340c20f5202664389eb2b657fd8a222  0005-pipeline-simple-expose-and-safely-reset-camera-flash.patch
+396f808f48e4f8d2f529993bf1a96fbd72276360ab9b745464237fe13bca8761  0005-pipeline-simple-expose-and-safely-reset-camera-flash.patch

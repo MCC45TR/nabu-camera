@@ -1,13 +1,13 @@
-From f4b70c49325b6bc5d4b3a7ab69da9e26a8edb2c4 Mon Sep 17 00:00:00 2001
+From e6ff0130926e70181e5d99e95855d7162787a2c4 Mon Sep 17 00:00:00 2001
 From: mcc45tr <mcc45tr@gmail.com>
 Date: Sun, 6 Sep 2026 02:31:48 +0300
-Subject: [PATCH 5/5] pipeline: simple: expose and safely reset camera flash
+Subject: [PATCH] pipeline: simple: expose and safely reset camera flash
 
 ---
  src/libcamera/camera_flash.cpp           |  2 +-
  src/libcamera/control_ids_core.yaml      |  6 ++++--
- src/libcamera/pipeline/simple/simple.cpp | 14 ++++++++++++++
- 3 files changed, 19 insertions(+), 3 deletions(-)
+ src/libcamera/pipeline/simple/simple.cpp | 16 ++++++++++++++++
+ 3 files changed, 21 insertions(+), 3 deletions(-)
 
 diff --git a/src/libcamera/camera_flash.cpp b/src/libcamera/camera_flash.cpp
 index d3b9fbf7..ad440ea9 100644
@@ -45,7 +45,7 @@ index 6995f28f..6f3a45c8 100644
 +        torch mode.
  ...
 diff --git a/src/libcamera/pipeline/simple/simple.cpp b/src/libcamera/pipeline/simple/simple.cpp
-index aae3daaa..bd300965 100644
+index aae3daaa..8a28e516 100644
 --- a/src/libcamera/pipeline/simple/simple.cpp
 +++ b/src/libcamera/pipeline/simple/simple.cpp
 @@ -40,6 +40,7 @@
@@ -56,15 +56,17 @@ index aae3daaa..bd300965 100644
  #include "libcamera/internal/global_configuration.h"
  #include "libcamera/internal/media_device.h"
  #include "libcamera/internal/pipeline_handler.h"
-@@ -663,6 +664,7 @@ int SimpleCameraData::init()
+@@ -663,6 +664,9 @@ int SimpleCameraData::init()
  	}
  
  	properties_ = sensor_->properties();
-+	FlashControl::updateFlashControls(sensor_->flash(), controlInfo_);
++	ControlInfoMap::Map controls(controlInfo_.begin(), controlInfo_.end());
++	FlashControl::updateFlashControls(sensor_->flash(), controls);
++	controlInfo_ = ControlInfoMap(std::move(controls), controls::controls);
  
  	/* Find the first subdev that can generate a frame start signal, if any. */
  	frameStartEmitter_ = nullptr;
-@@ -1718,6 +1720,10 @@ void SimplePipelineHandler::stopDevice(Camera *camera)
+@@ -1718,6 +1722,10 @@ void SimplePipelineHandler::stopDevice(Camera *camera)
  	V4L2VideoDevice *video = data->video_;
  	V4L2Subdevice *frameStartEmitter = data->frameStartEmitter_;
  
@@ -75,7 +77,7 @@ index aae3daaa..bd300965 100644
  	if (frameStartEmitter) {
  		frameStartEmitter->setFrameStartEnabled(false);
  		frameStartEmitter->frameStart.disconnect(data->delayedCtrls_.get(),
-@@ -1748,6 +1754,14 @@ int SimplePipelineHandler::queueRequestDevice(Camera *camera, Request *request)
+@@ -1748,6 +1756,14 @@ int SimplePipelineHandler::queueRequestDevice(Camera *camera, Request *request)
  	SimpleCameraData *data = cameraData(camera);
  	int ret;
  
