@@ -1,0 +1,250 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mcc45tr <mcc45tr@gmail.com>
+Date: Sun, 6 Sep 2026 09:43:51 +0300
+Subject: [PATCH] qcam: expose friendly camera names and torch
+
+---
+ src/apps/qcam/cam_select_dialog.cpp | 45 ++++++++++++++++++----
+ src/apps/qcam/main_window.cpp       | 59 +++++++++++++++++++++++++++--
+ src/apps/qcam/main_window.h         |  5 +++
+ 3 files changed, 98 insertions(+), 11 deletions(-)
+
+diff --git a/src/apps/qcam/cam_select_dialog.cpp b/src/apps/qcam/cam_select_dialog.cpp
+index 7370567d2..a40305167 100644
+--- a/src/apps/qcam/cam_select_dialog.cpp
++++ b/src/apps/qcam/cam_select_dialog.cpp
+@@ -11,6 +11,7 @@
+ 
+ #include <libcamera/camera.h>
+ #include <libcamera/camera_manager.h>
++#include <libcamera/property_ids.h>
+ 
+ #include <QComboBox>
+ #include <QDialogButtonBox>
+@@ -20,6 +21,30 @@
+ #include <QScreen>
+ #include <QString>
+ 
++namespace {
++
++QString cameraDisplayName(const std::shared_ptr<libcamera::Camera> &camera)
++{
++	const auto location = camera->properties().get(libcamera::properties::Location);
++
++	if (location) {
++		switch (*location) {
++		case libcamera::properties::CameraLocationFront:
++			return "Front Camera";
++		case libcamera::properties::CameraLocationBack:
++			return "Rear Camera";
++		case libcamera::properties::CameraLocationExternal:
++			return "External Camera";
++		default:
++			break;
++		}
++	}
++
++	return QString::fromStdString(camera->id());
++}
++
++} /* namespace */
++
+ CameraSelectorDialog::CameraSelectorDialog(libcamera::CameraManager *cameraManager,
+ 					   QWidget *parent)
+ 	: QDialog(parent), cm_(cameraManager)
+@@ -30,15 +55,18 @@ CameraSelectorDialog::CameraSelectorDialog(libcamera::CameraManager *cameraManag
+ 	/* Setup the camera id combo-box. */
+ 	cameraIdComboBox_ = new QComboBox;
+ 	for (const auto &cam : cm_->cameras())
+-		cameraIdComboBox_->addItem(QString::fromStdString(cam->id()));
++		cameraIdComboBox_->addItem(cameraDisplayName(cam),
++					   QString::fromStdString(cam->id()));
+ 
+ 	/* Set camera information labels. */
+ 	cameraLocation_ = new QLabel;
+ 	cameraModel_ = new QLabel;
+ 
+-	updateCameraInfo(cameraIdComboBox_->currentText());
+-	connect(cameraIdComboBox_, &QComboBox::currentTextChanged,
+-		this, &CameraSelectorDialog::updateCameraInfo);
++	updateCameraInfo(cameraIdComboBox_->currentData().toString());
++	connect(cameraIdComboBox_, &QComboBox::currentIndexChanged, this,
++		[this](int) {
++			updateCameraInfo(cameraIdComboBox_->currentData().toString());
++		});
+ 
+ 	/* Setup the QDialogButton Box */
+ 	QDialogButtonBox *buttonBox =
+@@ -69,18 +97,21 @@ CameraSelectorDialog::~CameraSelectorDialog() = default;
+ 
+ std::string CameraSelectorDialog::getCameraId()
+ {
+-	return cameraIdComboBox_->currentText().toStdString();
++	return cameraIdComboBox_->currentData().toString().toStdString();
+ }
+ 
+ /* Hotplug / Unplug Support. */
+ void CameraSelectorDialog::addCamera(QString cameraId)
+ {
+-	cameraIdComboBox_->addItem(cameraId);
++	const std::shared_ptr<libcamera::Camera> camera =
++		cm_->get(cameraId.toStdString());
++	cameraIdComboBox_->addItem(camera ? cameraDisplayName(camera) : cameraId,
++				   cameraId);
+ }
+ 
+ void CameraSelectorDialog::removeCamera(QString cameraId)
+ {
+-	int cameraIndex = cameraIdComboBox_->findText(cameraId);
++	int cameraIndex = cameraIdComboBox_->findData(cameraId);
+ 	cameraIdComboBox_->removeItem(cameraIndex);
+ }
+ 
+diff --git a/src/apps/qcam/main_window.cpp b/src/apps/qcam/main_window.cpp
+index 59c2aa66c..b4c66c529 100644
+--- a/src/apps/qcam/main_window.cpp
++++ b/src/apps/qcam/main_window.cpp
+@@ -12,6 +12,8 @@
+ #include <string>
+ 
+ #include <libcamera/camera_manager.h>
++#include <libcamera/control_ids.h>
++#include <libcamera/property_ids.h>
+ #include <libcamera/version.h>
+ 
+ #include <QCoreApplication>
+@@ -87,8 +89,8 @@ private:
+ };
+ 
+ MainWindow::MainWindow(CameraManager *cm, const OptionsParser::Options &options)
+-	: saveRaw_(nullptr), options_(options), cm_(cm), isCapturing_(false),
+-	  captureRaw_(false)
++	: saveRaw_(nullptr), torchAction_(nullptr), options_(options), cm_(cm),
++	  isCapturing_(false), captureRaw_(false), torchEnabled_(false)
+ {
+ 	int ret;
+ 
+@@ -205,6 +207,13 @@ int MainWindow::createToolbars()
+ 	connect(action, &QAction::toggled, this, &MainWindow::toggleCapture);
+ 	startStopAction_ = action;
+ 
++	/* Torch is exposed only when the selected camera has a flash device. */
++	torchAction_ = toolbar_->addAction(QIcon::fromTheme("flashlight-on"),
++					  "Flashlight");
++	torchAction_->setCheckable(true);
++	torchAction_->setEnabled(false);
++	connect(torchAction_, &QAction::toggled, this, &MainWindow::toggleTorch);
++
+ 	/* Save As... action. */
+ 	action = toolbar_->addAction(QIcon::fromTheme("document-save-as",
+ 						      QIcon(":save.svg")),
+@@ -272,6 +281,7 @@ void MainWindow::switchCamera()
+ 	 * the new camera and start a new capture session.
+ 	 */
+ 	startStopAction_->setChecked(false);
++	torchAction_->setChecked(false);
+ 
+ 	if (camera_)
+ 		camera_->release();
+@@ -281,7 +291,43 @@ void MainWindow::switchCamera()
+ 	startStopAction_->setChecked(true);
+ 
+ 	/* Display the current cameraId in the toolbar .*/
+-	cameraSelectButton_->setText(QString::fromStdString(cam->id()));
++	cameraSelectButton_->setText(cameraDisplayName(cam));
++	updateCameraActions();
++}
++
++void MainWindow::toggleTorch(bool enable)
++{
++	torchEnabled_ = enable;
++}
++
++QString MainWindow::cameraDisplayName(const std::shared_ptr<Camera> &camera) const
++{
++	const auto location = camera->properties().get(properties::Location);
++
++	if (location) {
++		switch (*location) {
++		case properties::CameraLocationFront:
++			return "Front Camera";
++		case properties::CameraLocationBack:
++			return "Rear Camera";
++		case properties::CameraLocationExternal:
++			return "External Camera";
++		default:
++			break;
++		}
++	}
++
++	return QString::fromStdString(camera->id());
++}
++
++void MainWindow::updateCameraActions()
++{
++	const bool hasTorch = camera_ &&
++		camera_->controls().find(&controls::FlashMode) != camera_->controls().end();
++
++	if (!hasTorch)
++		torchAction_->setChecked(false);
++	torchAction_->setEnabled(hasTorch);
+ }
+ 
+ std::shared_ptr<Camera> MainWindow::chooseCamera()
+@@ -323,7 +369,8 @@ int MainWindow::openCamera()
+ 	}
+ 
+ 	/* Set the camera switch button with the currently selected Camera id. */
+-	cameraSelectButton_->setText(QString::fromStdString(camera_->id()));
++	cameraSelectButton_->setText(cameraDisplayName(camera_));
++	updateCameraActions();
+ 
+ 	return 0;
+ }
+@@ -776,5 +823,9 @@ void MainWindow::renderComplete(FrameBuffer *buffer)
+ 
+ int MainWindow::queueRequest(Request *request)
+ {
++	if (camera_->controls().find(&controls::FlashMode) != camera_->controls().end())
++		request->controls().set(controls::FlashMode,
++			torchEnabled_ ? controls::FlashModeTorch : controls::FlashModeNone);
++
+ 	return camera_->queueRequest(request);
+ }
+diff --git a/src/apps/qcam/main_window.h b/src/apps/qcam/main_window.h
+index 20d369ad2..48f1976ef 100644
+--- a/src/apps/qcam/main_window.h
++++ b/src/apps/qcam/main_window.h
+@@ -62,6 +62,7 @@ private Q_SLOTS:
+ 
+ 	void switchCamera();
+ 	void toggleCapture(bool start);
++	void toggleTorch(bool enable);
+ 
+ 	void saveImageAs();
+ 	void captureRaw();
+@@ -83,6 +84,8 @@ private:
+ 	void removeCamera(std::shared_ptr<libcamera::Camera> camera);
+ 
+ 	int queueRequest(libcamera::Request *request);
++	void updateCameraActions();
++	QString cameraDisplayName(const std::shared_ptr<libcamera::Camera> &camera) const;
+ 	void requestComplete(libcamera::Request *request);
+ 	void processCapture();
+ 	void processHotplug(HotplugEvent *e);
+@@ -93,6 +96,7 @@ private:
+ 	QAction *startStopAction_;
+ 	QPushButton *cameraSelectButton_;
+ 	QAction *saveRaw_;
++	QAction *torchAction_;
+ 	ViewFinder *viewfinder_;
+ 
+ 	QIcon iconPlay_;
+@@ -117,6 +121,7 @@ private:
+ 	/* Capture state, buffers queue and statistics */
+ 	bool isCapturing_;
+ 	bool captureRaw_;
++	bool torchEnabled_;
+ 	libcamera::Stream *vfStream_;
+ 	libcamera::Stream *rawStream_;
+ 	std::map<const libcamera::Stream *, QQueue<libcamera::FrameBuffer *>> freeBuffers_;

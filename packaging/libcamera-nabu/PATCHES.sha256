@@ -10,3 +10,4 @@ c01281e7ffea4d3d28319e27367e452df3120963dfc8dd10caaa9cd087ab66eb  0003-sensor-ad
 396f808f48e4f8d2f529993bf1a96fbd72276360ab9b745464237fe13bca8761  0005-pipeline-simple-expose-and-safely-reset-camera-flash.patch
 9aa2066c3e55286b58dcf40720860a7a46513e53f2279951f8d241f38afd556a  0006-software-isp-discard-stale-debayer-work-on-stop.patch
 6b117ebcb38c2bef4e5a0bf96a0c89dc40cf28d6d38b0abdf06251e860f0e8dd  0007-ipa-soft-honor-frame-duration-limits.patch
+20b8ba8a90ee8b7b83b725aaadb39528234efde24e27df0caffdff4d37f1e6f6  0008-qcam-expose-friendly-camera-names-and-torch.patch

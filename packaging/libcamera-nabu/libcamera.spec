@@ -1,6 +1,6 @@
 Name:           libcamera
 Version:        0.7.2
-Release:        12.nabu1%{?dist}
+Release:        13.nabu1%{?dist}
 Summary:        A library to support complex camera ISPs
 License:        LGPL-2.1-or-later
 URL:            https://libcamera.org/
@@ -20,6 +20,7 @@ Patch09:        0004-libcamera-Add-flash-helpers-for-pipeline-handlers.patch
 Patch10:        0005-pipeline-simple-expose-and-safely-reset-camera-flash.patch
 Patch11:        0006-software-isp-discard-stale-debayer-work-on-stop.patch
 Patch12:        0007-ipa-soft-honor-frame-duration-limits.patch
+Patch13:        0008-qcam-expose-friendly-camera-names-and-torch.patch
 ExcludeArch:    s390x ppc64le
 
 BuildRequires:  gcc-c++
@@ -151,6 +152,8 @@ grep -Fq 'removeMessages(debayer_.get())' src/libcamera/software_isp/software_is
 grep -Fq 'V4L2_CID_VBLANK, { delays.vblankDelay, true }' src/libcamera/pipeline/simple/simple.cpp
 grep -Fq 'controls::FrameDurationLimits' src/ipa/simple/soft_simple.cpp
 grep -Fq 'controls::FrameDuration' src/ipa/simple/soft_simple.cpp
+grep -Fq 'return "Front Camera"' src/apps/qcam/cam_select_dialog.cpp
+grep -Fq 'controls::FlashModeTorch' src/apps/qcam/main_window.cpp
 
 %files
 %license COPYING.rst LICENSES/LGPL-2.1-or-later.txt
@@ -191,6 +194,10 @@ grep -Fq 'controls::FrameDuration' src/ipa/simple/soft_simple.cpp
 %{python3_sitearch}/*
 
 %changelog
+* Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-13.nabu1
+- Show friendly front, rear and external camera names in QCam.
+- Expose a standard torch toggle only on cameras that advertise FlashMode.
+
 * Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-12.nabu1
 - Allow the mode-specific VBLANK update to expand the exposure range safely.
 - Avoid rejecting valid long exposures against the stale configure-time map.
