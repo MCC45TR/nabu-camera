@@ -1,4 +1,4 @@
-From b7d1c802f3c0f12a8b43af3c4bd5cc46d0f88645 Mon Sep 17 00:00:00 2001
+From dbeef7280ce1233971bdbebaca69d9f19abfa31f Mon Sep 17 00:00:00 2001
 From: mcc45tr <mcc45tr@gmail.com>
 Date: Sun, 6 Sep 2026 08:36:27 +0300
 Subject: [PATCH] ipa: soft: honor frame duration limits
@@ -7,10 +7,10 @@ Subject: [PATCH] ipa: soft: honor frame duration limits
  .../internal/software_isp/software_isp.h      |   3 +-
  include/libcamera/ipa/soft.mojom              |   3 +-
  src/ipa/simple/ipa_context.h                  |   7 +
- src/ipa/simple/soft_simple.cpp                | 121 ++++++++++++++++--
+ src/ipa/simple/soft_simple.cpp                | 128 ++++++++++++++++--
  src/libcamera/pipeline/simple/simple.cpp      |  28 +++-
  src/libcamera/software_isp/software_isp.cpp   |   7 +-
- 6 files changed, 154 insertions(+), 15 deletions(-)
+ 6 files changed, 160 insertions(+), 16 deletions(-)
 
 diff --git a/include/libcamera/internal/software_isp/software_isp.h b/include/libcamera/internal/software_isp/software_isp.h
 index 4f72dce9b..938d98090 100644
@@ -80,7 +80,7 @@ index 8ccfacb46..6c8244562 100644
  	} sensor;
  
 diff --git a/src/ipa/simple/soft_simple.cpp b/src/ipa/simple/soft_simple.cpp
-index 95cc63a4a..400153a71 100644
+index 95cc63a4a..bd0e8f8b7 100644
 --- a/src/ipa/simple/soft_simple.cpp
 +++ b/src/ipa/simple/soft_simple.cpp
 @@ -58,7 +58,8 @@ public:
@@ -201,7 +201,7 @@ index 95cc63a4a..400153a71 100644
  	for (const auto &algo : algorithms())
  		algo->queueRequest(context_, frame, frameContext, controls);
  }
-@@ -300,26 +374,57 @@ void IPASoftSimple::processStats(const uint32_t frame,
+@@ -300,26 +374,62 @@ void IPASoftSimple::processStats(const uint32_t frame,
  {
  	IPAFrameContext &frameContext = context_.frameContexts.get(frame);
  
@@ -258,7 +258,13 @@ index 95cc63a4a..400153a71 100644
 +		context_.configuration.agc.vblankMin,
 +		context_.configuration.agc.vblankMax);
  
- 	ControlList ctrls(sensorInfoMap_);
+-	ControlList ctrls(sensorInfoMap_);
++	/*
++	 * VBLANK changes the sensor's valid exposure range dynamically.  Keep the
++	 * control IDs from the cached map, but validate against the mode-specific
++	 * limits calculated above instead of its stale configure-time range.
++	 */
++	ControlList ctrls(sensorInfoMap_.idmap());
  
  	auto &againNew = frameContext.sensor.gain;
 +	ctrls.set(V4L2_CID_VBLANK, frameContext.sensor.vblank);
