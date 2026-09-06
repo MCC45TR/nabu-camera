@@ -1,4 +1,4 @@
-From fbaefa501dd87310229e6cb018d7a3a58340f830 Mon Sep 17 00:00:00 2001
+From 668b958ffc9c5e520c575db188e8cafcdd6bfea3 Mon Sep 17 00:00:00 2001
 From: mcc45tr <mcc45tr@gmail.com>
 Date: Sun, 6 Sep 2026 08:36:27 +0300
 Subject: [PATCH] ipa: soft: honor frame duration limits
@@ -80,7 +80,7 @@ index 8ccfacb46..6c8244562 100644
  	} sensor;
  
 diff --git a/src/ipa/simple/soft_simple.cpp b/src/ipa/simple/soft_simple.cpp
-index 95cc63a4a..048540ea6 100644
+index 95cc63a4a..400153a71 100644
 --- a/src/ipa/simple/soft_simple.cpp
 +++ b/src/ipa/simple/soft_simple.cpp
 @@ -58,7 +58,8 @@ public:
@@ -127,9 +127,9 @@ index 95cc63a4a..048540ea6 100644
 +		const int32_t frameLines =
 +			static_cast<int32_t>(context_.configuration.agc.sensorHeight) +
 +			vblank;
-+		return (context_.configuration.agc.lineDuration *
-+			frameLines)
-+			.get<std::micro>();
++		const utils::Duration duration =
++			context_.configuration.agc.lineDuration * frameLines;
++		return duration.get<std::micro>();
 +	};
 +	context_.configuration.agc.frameDurationMin =
 +		frameDuration(context_.configuration.agc.vblankMin);
@@ -226,9 +226,9 @@ index 95cc63a4a..048540ea6 100644
 +	const int32_t frameLines =
 +		static_cast<int32_t>(context_.configuration.agc.sensorHeight) +
 +		frameContext.sensor.vblank;
-+	metadata.set(controls::FrameDuration,
-+		     (context_.configuration.agc.lineDuration * frameLines)
-+			     .get<std::micro>());
++	const utils::Duration frameDuration =
++		context_.configuration.agc.lineDuration * frameLines;
++	metadata.set(controls::FrameDuration, frameDuration.get<std::micro>());
 +	metadata.set(controls::FrameDurationLimits,
 +		     { context_.activeState.agc.minFrameDuration,
 +		       context_.activeState.agc.maxFrameDuration });

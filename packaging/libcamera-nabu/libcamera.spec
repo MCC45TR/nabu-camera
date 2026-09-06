@@ -1,6 +1,6 @@
 Name:           libcamera
 Version:        0.7.2
-Release:        9.nabu1%{?dist}
+Release:        10.nabu1%{?dist}
 Summary:        A library to support complex camera ISPs
 License:        LGPL-2.1-or-later
 URL:            https://libcamera.org/
@@ -191,6 +191,9 @@ grep -Fq 'controls::FrameDuration' src/ipa/simple/soft_simple.cpp
 %{python3_sitearch}/*
 
 %changelog
+* Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-10.nabu1
+- Materialize calculated sensor timing as utils::Duration before conversion.
+
 * Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-9.nabu1
 - Keep sensor frame-line arithmetic in the signed type expected by Duration.
 - Preserve the FrameDurationLimits and 30/120 fps behavior from 0.7.2-8.
