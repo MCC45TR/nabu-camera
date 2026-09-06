@@ -1,6 +1,6 @@
 Name:           libcamera
 Version:        0.7.2
-Release:        16.nabu1%{?dist}
+Release:        17.nabu1%{?dist}
 Summary:        A library to support complex camera ISPs
 License:        LGPL-2.1-or-later
 URL:            https://libcamera.org/
@@ -8,6 +8,7 @@ Source0:        https://gitlab.freedesktop.org/camera/libcamera/-/archive/v%{ver
 Source1:        qcam.desktop
 Source2:        qcam.metainfo.xml
 Source3:        70-libcamera.rules
+Source4:        nabu-camera-support-0.1.0.tar.gz
 Patch01:        0001-disable-rpi-pisp.patch
 Patch02:        0002-fix-ov01a10-flickering.patch
 Patch03:        0001-ipa-add-OV13B10-and-OV8856-gain-helpers.patch
@@ -20,10 +21,7 @@ Patch09:        0004-libcamera-Add-flash-helpers-for-pipeline-handlers.patch
 Patch10:        0005-pipeline-simple-expose-and-safely-reset-camera-flash.patch
 Patch11:        0006-software-isp-discard-stale-debayer-work-on-stop.patch
 Patch12:        0007-ipa-soft-honor-frame-duration-limits.patch
-Patch13:        0008-qcam-expose-friendly-camera-names-and-torch.patch
-Patch14:        0009-qcam-integrate-optional-rear-autofocus-helper.patch
 Patch15:        0010-ipa-soft-retain-dynamic-sensor-control-metadata.patch
-Patch16:        0011-qcam-write-torch-mode-only-on-transitions.patch
 Patch17:        0012-pipeline-simple-retain-flash-controls-after-softisp-configure.patch
 ExcludeArch:    s390x ppc64le
 
@@ -50,6 +48,8 @@ BuildRequires:  pkgconfig(Qt6Gui)
 BuildRequires:  pkgconfig(Qt6OpenGL)
 BuildRequires:  pkgconfig(Qt6OpenGLWidgets)
 BuildRequires:  pkgconfig(Qt6Widgets)
+BuildRequires:  pkgconfig(gstreamer-app-1.0)
+BuildRequires:  pkgconfig(gtk4)
 BuildRequires:  pybind11-devel
 BuildRequires:  python3-devel
 BuildRequires:  python3-jinja2
@@ -93,9 +93,21 @@ Command-line tools for libcamera.
 Summary: Graphical QCam application for %{name}
 License: GPL-2.0-or-later AND MIT
 Requires: %{name}%{?_isa} = %{version}-%{release}
-Recommends: nabu-camera-support >= 0.1.0-3.alpha
 %description qcam
 Graphical camera demonstration application.
+
+%package -n nabu-camera-support
+Summary: Camera tuning and autofocus support for Xiaomi Pad 5
+License: GPL-2.0-only AND CC0-1.0
+Requires: %{name}-ipa%{?_isa} = %{version}-%{release}
+Provides: nabu-camera-tools = 0.1.0-3
+Obsoletes: nabu-camera-tools < 0.1.0-4
+ExclusiveArch: aarch64
+%description -n nabu-camera-support
+Fedora userspace support for the Xiaomi Pad 5 camera stack: the original
+ChengFangming/CFM880 simple-IPA colour tuning profiles and the Nabu rear-camera
+autofocus helper.  This is packaged with the matching libcamera build so the
+camera ABI, pipeline fixes and device tuning are updated atomically.
 
 %package gstreamer
 Summary: GStreamer plugin for %{name}
@@ -117,6 +129,7 @@ Python bindings for libcamera.
 
 %prep
 %autosetup -p1 -n %{name}-v%{version}
+%setup -q -T -D -a 4 -n %{name}-v%{version}
 
 %build
 export CFLAGS="%{optflags} -Wno-deprecated-declarations"
@@ -124,6 +137,7 @@ export CXXFLAGS="%{optflags} -Wno-deprecated-declarations --param=max-devirt-tar
 %meson -Dv4l2=enabled -Dlc-compliance=disabled -Dlibunwind=disabled \
        -Dtest=true -Ddocumentation=disabled -Drpi-awb-nn=disabled
 %meson_build
+%make_build -C nabu-camera-support-0.1.0/camera-app
 
 %define __spec_install_post \
     %{?__debug_package:%{__debug_install_post}} \
@@ -138,6 +152,14 @@ desktop-file-install --dir=%{buildroot}%{_datadir}/applications %SOURCE1
 mkdir -p %{buildroot}/%{_metainfodir}/
 cp -a %SOURCE2 %{buildroot}/%{_metainfodir}/
 install -D -m 644 %SOURCE3 %{buildroot}/%{_udevrulesdir}/70-libcamera.rules
+install -Dm0755 nabu-camera-support-0.1.0/camera-app/nabu-autofocus \
+    %{buildroot}%{_bindir}/nabu-autofocus
+install -Dm0644 nabu-camera-support-0.1.0/camera-tuning/ov13b10.yaml \
+    %{buildroot}%{_datadir}/libcamera/ipa/simple/ov13b10.yaml
+install -Dm0644 nabu-camera-support-0.1.0/camera-tuning/ov8856.yaml \
+    %{buildroot}%{_datadir}/libcamera/ipa/simple/ov8856.yaml
+install -Dm0644 nabu-camera-support-0.1.0/camera-app/README.md \
+    %{buildroot}%{_docdir}/nabu-camera-support/README-autofocus.md
 
 %check
 # Mock/COPR build roots do not expose a dma-buf heap.  The GStreamer tests
@@ -157,12 +179,11 @@ grep -Fq 'removeMessages(debayer_.get())' src/libcamera/software_isp/software_is
 grep -Fq 'V4L2_CID_VBLANK, { delays.vblankDelay, true }' src/libcamera/pipeline/simple/simple.cpp
 grep -Fq 'controls::FrameDurationLimits' src/ipa/simple/soft_simple.cpp
 grep -Fq 'controls::FrameDuration' src/ipa/simple/soft_simple.cpp
-grep -Fq 'return "Front Camera"' src/apps/qcam/cam_select_dialog.cpp
-grep -Fq 'controls::FlashModeTorch' src/apps/qcam/main_window.cpp
-grep -Fq 'findExecutable("nabu-autofocus")' src/apps/qcam/main_window.cpp
 grep -Fq 'ControlList ctrls(dynamicSensorInfoMap_)' src/ipa/simple/soft_simple.cpp
-grep -Fq 'torchUpdatePending_' src/apps/qcam/main_window.cpp
 grep -Fq 'Restore ancillary controls that' src/libcamera/pipeline/simple/simple.cpp
+%{buildroot}%{_bindir}/nabu-autofocus --help | grep -Fq -- '--position N'
+grep -Fqx 'version: 1' %{buildroot}%{_datadir}/libcamera/ipa/simple/ov13b10.yaml
+grep -Fqx 'version: 1' %{buildroot}%{_datadir}/libcamera/ipa/simple/ov8856.yaml
 
 %files
 %license COPYING.rst LICENSES/LGPL-2.1-or-later.txt
@@ -190,6 +211,14 @@ grep -Fq 'Restore ancillary controls that' src/libcamera/pipeline/simple/simple.
 %{_datadir}/applications/qcam.desktop
 %{_metainfodir}/qcam.metainfo.xml
 
+%files -n nabu-camera-support
+%license nabu-camera-support-0.1.0/LICENSES/preferred/GPL-2.0 nabu-camera-support-0.1.0/LICENSES/preferred/CC0-1.0
+%doc nabu-camera-support-0.1.0/README.md nabu-camera-support-0.1.0/SOURCE.md
+%{_docdir}/nabu-camera-support/README-autofocus.md
+%{_bindir}/nabu-autofocus
+%{_datadir}/libcamera/ipa/simple/ov13b10.yaml
+%{_datadir}/libcamera/ipa/simple/ov8856.yaml
+
 %files tools
 %license LICENSES/GPL-2.0-only.txt
 %{_bindir}/cam
@@ -203,6 +232,11 @@ grep -Fq 'Restore ancillary controls that' src/libcamera/pipeline/simple/simple.
 %{python3_sitearch}/*
 
 %changelog
+* Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-17.nabu1
+- Build Nabu camera tuning and autofocus support with the matching libcamera.
+- Drop all downstream QCam user-interface changes and retain upstream QCam.
+- Replace the legacy nabu-camera-tools compatibility package.
+
 * Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-16.nabu1
 - Restore pipeline-owned flash controls after SoftISP configuration.
 - Keep FlashMode valid when the first configured request is validated.
