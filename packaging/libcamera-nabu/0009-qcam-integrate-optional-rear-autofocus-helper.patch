@@ -1,0 +1,154 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mcc45tr <mcc45tr@gmail.com>
+Date: Sun, 6 Sep 2026 09:45:27 +0300
+Subject: [PATCH] qcam: integrate optional rear autofocus helper
+
+---
+ src/apps/qcam/main_window.cpp | 64 ++++++++++++++++++++++++++++++++++-
+ src/apps/qcam/main_window.h   |  5 +++
+ 2 files changed, 68 insertions(+), 1 deletion(-)
+
+diff --git a/src/apps/qcam/main_window.cpp b/src/apps/qcam/main_window.cpp
+index b4c66c529..103920e0e 100644
+--- a/src/apps/qcam/main_window.cpp
++++ b/src/apps/qcam/main_window.cpp
+@@ -9,6 +9,7 @@
+ 
+ #include <assert.h>
+ #include <iomanip>
++#include <optional>
+ #include <string>
+ 
+ #include <libcamera/camera_manager.h>
+@@ -22,6 +23,7 @@
+ #include <QImageWriter>
+ #include <QMessageBox>
+ #include <QMutexLocker>
++#include <QProcess>
+ #include <QStandardPaths>
+ #include <QStringList>
+ #include <QTimer>
+@@ -89,7 +91,8 @@ private:
+ };
+ 
+ MainWindow::MainWindow(CameraManager *cm, const OptionsParser::Options &options)
+-	: saveRaw_(nullptr), torchAction_(nullptr), options_(options), cm_(cm),
++	: saveRaw_(nullptr), torchAction_(nullptr), autofocusAction_(nullptr),
++	  autofocusProcess_(new QProcess(this)), options_(options), cm_(cm),
+ 	  isCapturing_(false), captureRaw_(false), torchEnabled_(false)
+ {
+ 	int ret;
+@@ -214,6 +217,22 @@ int MainWindow::createToolbars()
+ 	torchAction_->setEnabled(false);
+ 	connect(torchAction_, &QAction::toggled, this, &MainWindow::toggleTorch);
+ 
++	autofocusAction_ = toolbar_->addAction(QIcon::fromTheme("camera-focus"),
++					      "Autofocus");
++	autofocusAction_->setEnabled(false);
++	connect(autofocusAction_, &QAction::triggered,
++		this, &MainWindow::runAutofocus);
++	connect(autofocusProcess_,
++		qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
++		[this](int exitCode, QProcess::ExitStatus) {
++			autofocusFinished(exitCode);
++		});
++	connect(autofocusProcess_, &QProcess::errorOccurred, this,
++		[this](QProcess::ProcessError error) {
++			if (error == QProcess::FailedToStart)
++				autofocusFinished(1);
++		});
++
+ 	/* Save As... action. */
+ 	action = toolbar_->addAction(QIcon::fromTheme("document-save-as",
+ 						      QIcon(":save.svg")),
+@@ -300,6 +319,41 @@ void MainWindow::toggleTorch(bool enable)
+ 	torchEnabled_ = enable;
+ }
+ 
++void MainWindow::runAutofocus()
++{
++	if (!camera_ || autofocusProcess_->state() != QProcess::NotRunning)
++		return;
++
++	const QString helper = QStandardPaths::findExecutable("nabu-autofocus");
++	if (helper.isEmpty())
++		return;
++
++	startStopAction_->setChecked(false);
++	torchAction_->setChecked(false);
++	camera_->release();
++	autofocusAction_->setEnabled(false);
++	autofocusProcess_->start(helper, { "--once", "--no-preview" });
++}
++
++void MainWindow::autofocusFinished(int exitCode)
++{
++	if (!camera_)
++		return;
++
++	if (camera_->acquire()) {
++		QMessageBox::warning(this, "Autofocus",
++				     "The camera could not be acquired after focusing.");
++		return;
++	}
++
++	if (exitCode)
++		QMessageBox::warning(this, "Autofocus",
++				     "Autofocus did not find a reliable focus position.");
++
++	updateCameraActions();
++	startStopAction_->setChecked(true);
++}
++
+ QString MainWindow::cameraDisplayName(const std::shared_ptr<Camera> &camera) const
+ {
+ 	const auto location = camera->properties().get(properties::Location);
+@@ -324,10 +378,18 @@ void MainWindow::updateCameraActions()
+ {
+ 	const bool hasTorch = camera_ &&
+ 		camera_->controls().find(&controls::FlashMode) != camera_->controls().end();
++	const auto location = camera_
++		? camera_->properties().get(properties::Location)
++		: std::optional<int32_t>{};
++	const bool canAutofocus = location &&
++		*location == properties::CameraLocationBack &&
++		!QStandardPaths::findExecutable("nabu-autofocus").isEmpty() &&
++		autofocusProcess_->state() == QProcess::NotRunning;
+ 
+ 	if (!hasTorch)
+ 		torchAction_->setChecked(false);
+ 	torchAction_->setEnabled(hasTorch);
++	autofocusAction_->setEnabled(canAutofocus);
+ }
+ 
+ std::shared_ptr<Camera> MainWindow::chooseCamera()
+diff --git a/src/apps/qcam/main_window.h b/src/apps/qcam/main_window.h
+index 48f1976ef..cfba6db6f 100644
+--- a/src/apps/qcam/main_window.h
++++ b/src/apps/qcam/main_window.h
+@@ -32,6 +32,7 @@
+ #include "viewfinder.h"
+ 
+ class QAction;
++class QProcess;
+ 
+ class CameraSelectorDialog;
+ class Image;
+@@ -63,6 +64,8 @@ private Q_SLOTS:
+ 	void switchCamera();
+ 	void toggleCapture(bool start);
+ 	void toggleTorch(bool enable);
++	void runAutofocus();
++	void autofocusFinished(int exitCode);
+ 
+ 	void saveImageAs();
+ 	void captureRaw();
+@@ -97,6 +100,8 @@ private:
+ 	QPushButton *cameraSelectButton_;
+ 	QAction *saveRaw_;
+ 	QAction *torchAction_;
++	QAction *autofocusAction_;
++	QProcess *autofocusProcess_;
+ 	ViewFinder *viewfinder_;
+ 
+ 	QIcon iconPlay_;

@@ -1,6 +1,6 @@
 Name:           libcamera
 Version:        0.7.2
-Release:        13.nabu1%{?dist}
+Release:        14.nabu1%{?dist}
 Summary:        A library to support complex camera ISPs
 License:        LGPL-2.1-or-later
 URL:            https://libcamera.org/
@@ -21,6 +21,8 @@ Patch10:        0005-pipeline-simple-expose-and-safely-reset-camera-flash.patch
 Patch11:        0006-software-isp-discard-stale-debayer-work-on-stop.patch
 Patch12:        0007-ipa-soft-honor-frame-duration-limits.patch
 Patch13:        0008-qcam-expose-friendly-camera-names-and-torch.patch
+Patch14:        0009-qcam-integrate-optional-rear-autofocus-helper.patch
+Patch15:        0010-ipa-soft-retain-dynamic-sensor-control-metadata.patch
 ExcludeArch:    s390x ppc64le
 
 BuildRequires:  gcc-c++
@@ -154,6 +156,8 @@ grep -Fq 'controls::FrameDurationLimits' src/ipa/simple/soft_simple.cpp
 grep -Fq 'controls::FrameDuration' src/ipa/simple/soft_simple.cpp
 grep -Fq 'return "Front Camera"' src/apps/qcam/cam_select_dialog.cpp
 grep -Fq 'controls::FlashModeTorch' src/apps/qcam/main_window.cpp
+grep -Fq 'findExecutable("nabu-autofocus")' src/apps/qcam/main_window.cpp
+grep -Fq 'ControlList ctrls(dynamicSensorInfoMap_)' src/ipa/simple/soft_simple.cpp
 
 %files
 %license COPYING.rst LICENSES/LGPL-2.1-or-later.txt
@@ -194,6 +198,12 @@ grep -Fq 'controls::FlashModeTorch' src/apps/qcam/main_window.cpp
 %{python3_sitearch}/*
 
 %changelog
+* Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-14.nabu1
+- Offer the proven CN3927 sharpness scan from QCam on the rear camera.
+- Release and reacquire the camera around the optional autofocus helper.
+- Preserve full V4L2 control metadata when expanding the exposure range.
+- Prevent an IPA serializer abort seen in the 0.7.2-12 runtime HIL test.
+
 * Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-13.nabu1
 - Show friendly front, rear and external camera names in QCam.
 - Expose a standard torch toggle only on cameras that advertise FlashMode.
