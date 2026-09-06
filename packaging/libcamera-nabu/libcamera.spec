@@ -1,6 +1,6 @@
 Name:           libcamera
 Version:        0.7.2
-Release:        7.nabu1%{?dist}
+Release:        8.nabu1%{?dist}
 Summary:        A library to support complex camera ISPs
 License:        LGPL-2.1-or-later
 URL:            https://libcamera.org/
@@ -19,6 +19,7 @@ Patch08:        0003-Documentation-Add-flash-driver-requirements.patch
 Patch09:        0004-libcamera-Add-flash-helpers-for-pipeline-handlers.patch
 Patch10:        0005-pipeline-simple-expose-and-safely-reset-camera-flash.patch
 Patch11:        0006-software-isp-discard-stale-debayer-work-on-stop.patch
+Patch12:        0007-ipa-soft-honor-frame-duration-limits.patch
 ExcludeArch:    s390x ppc64le
 
 BuildRequires:  gcc-c++
@@ -59,6 +60,9 @@ libcamera provides a userspace camera stack. This Fedora-compatible build adds
 generic OV13B10 and OV8856 gain conversion and fixes request cancellation in
 the simple software-ISP pipeline used by Qualcomm CAMSS.  It also exposes the
 standard libcamera flash controls for media-controller-linked flash devices.
+The simple software ISP also applies standard frame-duration limits so regular
+30 fps camera clients retain usable exposure while explicit high-rate modes
+remain available.
 
 %package devel
 Summary: Development package for %{name}
@@ -144,6 +148,9 @@ grep -Fq 'FlashControl::updateFlashControls(sensor_->flash(), controls)' src/lib
 grep -Fq 'FlashControl::handleFlashControls(data->sensor_->flash()' src/libcamera/pipeline/simple/simple.cpp
 grep -Fq 'setMode(CameraFlash::Mode::None)' src/libcamera/pipeline/simple/simple.cpp
 grep -Fq 'removeMessages(debayer_.get())' src/libcamera/software_isp/software_isp.cpp
+grep -Fq 'V4L2_CID_VBLANK, { delays.vblankDelay, true }' src/libcamera/pipeline/simple/simple.cpp
+grep -Fq 'controls::FrameDurationLimits' src/ipa/simple/soft_simple.cpp
+grep -Fq 'controls::FrameDuration' src/ipa/simple/soft_simple.cpp
 
 %files
 %license COPYING.rst LICENSES/LGPL-2.1-or-later.txt
@@ -184,6 +191,11 @@ grep -Fq 'removeMessages(debayer_.get())' src/libcamera/software_isp/software_is
 %{python3_sitearch}/*
 
 %changelog
+* Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-8.nabu1
+- Apply FrameDurationLimits in the simple software ISP through VBLANK.
+- Let normal 30 fps clients use longer exposure without removing 120 fps modes.
+- Refresh mode-specific controls after sensor configuration.
+
 * Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-7.nabu1
 - Drop stale asynchronous debayer work when a camera session stops.
 - Prevent old software-ISP buffers from being processed after camera switch.
