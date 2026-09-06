@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mcc45tr <mcc45tr@gmail.com>
+Date: Sun, 6 Sep 2026 10:19:20 +0300
+Subject: [PATCH] pipeline: simple: retain flash controls after SoftISP
+ configure
+
+---
+ src/libcamera/pipeline/simple/simple.cpp | 20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
+
+diff --git a/src/libcamera/pipeline/simple/simple.cpp b/src/libcamera/pipeline/simple/simple.cpp
+index dfc92bdcb..1fdb4d9ad 100644
+--- a/src/libcamera/pipeline/simple/simple.cpp
++++ b/src/libcamera/pipeline/simple/simple.cpp
+@@ -1623,8 +1623,24 @@ int SimplePipelineHandler::configure(Camera *camera, CameraConfiguration *c)
+ 		if (ret)
+ 			return ret;
+ 		configInfo.sensorControls = data->sensor_->controls();
+-		return data->swIsp_->configure(inputCfg, outputCfgs, configInfo,
+-					       &data->controlInfo_);
++		ret = data->swIsp_->configure(inputCfg, outputCfgs, configInfo,
++					      &data->controlInfo_);
++		if (ret)
++			return ret;
++
++		/*
++		 * SoftwareIsp::configure() replaces the pipeline control map with
++		 * the controls returned by the IPA.  Restore ancillary controls that
++		 * are implemented by the pipeline rather than the IPA, otherwise they
++		 * remain visible before configure but fail request validation once the
++		 * stream starts.
++		 */
++		ControlInfoMap::Map controls(data->controlInfo_.begin(),
++					     data->controlInfo_.end());
++		FlashControl::updateFlashControls(data->sensor_->flash(), controls);
++		data->controlInfo_ =
++			ControlInfoMap(std::move(controls), controls::controls);
++		return 0;
+ 	}
+ }
+ 

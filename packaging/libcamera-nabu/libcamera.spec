@@ -1,6 +1,6 @@
 Name:           libcamera
 Version:        0.7.2
-Release:        15.nabu1%{?dist}
+Release:        16.nabu1%{?dist}
 Summary:        A library to support complex camera ISPs
 License:        LGPL-2.1-or-later
 URL:            https://libcamera.org/
@@ -24,6 +24,7 @@ Patch13:        0008-qcam-expose-friendly-camera-names-and-torch.patch
 Patch14:        0009-qcam-integrate-optional-rear-autofocus-helper.patch
 Patch15:        0010-ipa-soft-retain-dynamic-sensor-control-metadata.patch
 Patch16:        0011-qcam-write-torch-mode-only-on-transitions.patch
+Patch17:        0012-pipeline-simple-retain-flash-controls-after-softisp-configure.patch
 ExcludeArch:    s390x ppc64le
 
 BuildRequires:  gcc-c++
@@ -161,6 +162,7 @@ grep -Fq 'controls::FlashModeTorch' src/apps/qcam/main_window.cpp
 grep -Fq 'findExecutable("nabu-autofocus")' src/apps/qcam/main_window.cpp
 grep -Fq 'ControlList ctrls(dynamicSensorInfoMap_)' src/ipa/simple/soft_simple.cpp
 grep -Fq 'torchUpdatePending_' src/apps/qcam/main_window.cpp
+grep -Fq 'Restore ancillary controls that' src/libcamera/pipeline/simple/simple.cpp
 
 %files
 %license COPYING.rst LICENSES/LGPL-2.1-or-later.txt
@@ -201,6 +203,10 @@ grep -Fq 'torchUpdatePending_' src/apps/qcam/main_window.cpp
 %{python3_sitearch}/*
 
 %changelog
+* Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-16.nabu1
+- Restore pipeline-owned flash controls after SoftISP configuration.
+- Keep FlashMode valid when the first configured request is validated.
+
 * Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-15.nabu1
 - Send torch controls only when the state changes instead of on every frame.
 - Keep QCam state synchronized with the pipeline's forced-off stop behavior.

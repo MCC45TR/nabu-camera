@@ -14,3 +14,4 @@ c01281e7ffea4d3d28319e27367e452df3120963dfc8dd10caaa9cd087ab66eb  0003-sensor-ad
 65d3bd48094ddb1daf25fe9a2b5166d9751aab09956fbb4935a4052ffb16ac51  0009-qcam-integrate-optional-rear-autofocus-helper.patch
 75d8e00979a8609825866733fc1f81dd9f8afe544088e62d9ef93e0f1354fcf0  0010-ipa-soft-retain-dynamic-sensor-control-metadata.patch
 d5f283a6a581809d420c4961e51bcd0271a446078c163889887a5c4413ecb5f3  0011-qcam-write-torch-mode-only-on-transitions.patch
+617a921fc4d1473ffb9148b5bc8bb52a065daed963888a01635f818cc7bcf8f0  0012-pipeline-simple-retain-flash-controls-after-softisp-configure.patch
