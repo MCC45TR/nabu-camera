@@ -1,6 +1,6 @@
 Name:           libcamera
 Version:        0.7.2
-Release:        10.nabu1%{?dist}
+Release:        11.nabu1%{?dist}
 Summary:        A library to support complex camera ISPs
 License:        LGPL-2.1-or-later
 URL:            https://libcamera.org/
@@ -191,6 +191,10 @@ grep -Fq 'controls::FrameDuration' src/ipa/simple/soft_simple.cpp
 %{python3_sitearch}/*
 
 %changelog
+* Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-11.nabu1
+- Apply Camera::start session controls to the first simple-pipeline request.
+- Make negotiated GStreamer frame duration reach the sensor VBLANK control.
+
 * Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-10.nabu1
 - Materialize calculated sensor timing as utils::Duration before conversion.
 

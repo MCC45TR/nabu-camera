@@ -1,4 +1,4 @@
-From 668b958ffc9c5e520c575db188e8cafcdd6bfea3 Mon Sep 17 00:00:00 2001
+From b7d1c802f3c0f12a8b43af3c4bd5cc46d0f88645 Mon Sep 17 00:00:00 2001
 From: mcc45tr <mcc45tr@gmail.com>
 Date: Sun, 6 Sep 2026 08:36:27 +0300
 Subject: [PATCH] ipa: soft: honor frame duration limits
@@ -8,9 +8,9 @@ Subject: [PATCH] ipa: soft: honor frame duration limits
  include/libcamera/ipa/soft.mojom              |   3 +-
  src/ipa/simple/ipa_context.h                  |   7 +
  src/ipa/simple/soft_simple.cpp                | 121 ++++++++++++++++--
- src/libcamera/pipeline/simple/simple.cpp      |   7 +-
+ src/libcamera/pipeline/simple/simple.cpp      |  28 +++-
  src/libcamera/software_isp/software_isp.cpp   |   7 +-
- 6 files changed, 134 insertions(+), 14 deletions(-)
+ 6 files changed, 154 insertions(+), 15 deletions(-)
 
 diff --git a/include/libcamera/internal/software_isp/software_isp.h b/include/libcamera/internal/software_isp/software_isp.h
 index 4f72dce9b..938d98090 100644
@@ -266,10 +266,18 @@ index 95cc63a4a..400153a71 100644
  	ctrls.set(V4L2_CID_ANALOGUE_GAIN,
  		  static_cast<int32_t>(camHelper_ ? camHelper_->gainCode(againNew) : againNew));
 diff --git a/src/libcamera/pipeline/simple/simple.cpp b/src/libcamera/pipeline/simple/simple.cpp
-index 8a28e5169..79dc928c5 100644
+index 8a28e5169..dfc92bdcb 100644
 --- a/src/libcamera/pipeline/simple/simple.cpp
 +++ b/src/libcamera/pipeline/simple/simple.cpp
-@@ -570,6 +570,7 @@ SimpleCameraData::SimpleCameraData(SimplePipelineHandler *pipe,
+@@ -349,6 +349,7 @@ public:
+ 	std::map<PixelFormat, std::vector<const Configuration *>> formats_;
+ 
+ 	std::unique_ptr<DelayedControls> delayedCtrls_;
++	ControlList startControls_;
+ 
+ 	std::vector<std::unique_ptr<FrameBuffer>> conversionBuffers_;
+ 	struct RequestOutputs {
+@@ -570,6 +571,7 @@ SimpleCameraData::SimpleCameraData(SimplePipelineHandler *pipe,
  	std::unordered_map<uint32_t, DelayedControls::ControlParams> params = {
  		{ V4L2_CID_ANALOGUE_GAIN, { delays.gainDelay, false } },
  		{ V4L2_CID_EXPOSURE, { delays.exposureDelay, false } },
@@ -277,7 +285,7 @@ index 8a28e5169..79dc928c5 100644
  	};
  	delayedCtrls_ = std::make_unique<DelayedControls>(sensor_->device(), params);
  
-@@ -1617,8 +1618,12 @@ int SimplePipelineHandler::configure(Camera *camera, CameraConfiguration *c)
+@@ -1617,8 +1619,12 @@ int SimplePipelineHandler::configure(Camera *camera, CameraConfiguration *c)
  		return data->converter_->configure(inputCfg, outputCfgs);
  	} else {
  		ipa::soft::IPAConfigInfo configInfo;
@@ -289,6 +297,61 @@ index 8a28e5169..79dc928c5 100644
 +		return data->swIsp_->configure(inputCfg, outputCfgs, configInfo,
 +					       &data->controlInfo_);
  	}
+ }
+ 
+@@ -1640,7 +1646,7 @@ int SimplePipelineHandler::exportFrameBuffers(Camera *camera, Stream *stream,
+ 		return data->video_->exportBuffers(count, buffers);
+ }
+ 
+-int SimplePipelineHandler::start(Camera *camera, [[maybe_unused]] const ControlList *controls)
++int SimplePipelineHandler::start(Camera *camera, const ControlList *controls)
+ {
+ 	SimpleCameraData *data = cameraData(camera);
+ 	V4L2VideoDevice *video = data->video_;
+@@ -1655,6 +1661,10 @@ int SimplePipelineHandler::start(Camera *camera, [[maybe_unused]] const ControlL
+ 		return -EBUSY;
+ 	}
+ 
++	data->startControls_.clear();
++	if (controls)
++		data->startControls_ = *controls;
++
+ 	if (data->useConversion_ && !data->rawStream_) {
+ 		/*
+ 		 * When using the converter allocate a fixed number of internal
+@@ -1747,6 +1757,7 @@ void SimplePipelineHandler::stopDevice(Camera *camera)
+ 	data->clearIncompleteRequests();
+ 	data->frameInfo_.clear();
+ 	data->conversionBuffers_.clear();
++	data->startControls_.clear();
+ 
+ 	releasePipeline(data);
+ }
+@@ -1755,6 +1766,16 @@ int SimplePipelineHandler::queueRequestDevice(Camera *camera, Request *request)
+ {
+ 	SimpleCameraData *data = cameraData(camera);
+ 	int ret;
++	const bool applyStartControls = !data->startControls_.empty();
++
++	/*
++	 * Camera::start() controls are session defaults.  The simple pipeline used
++	 * to discard them, which made negotiated frame durations ineffective.
++	 * Apply them to the first request without overriding explicit per-request
++	 * controls.
++	 */
++	if (applyStartControls)
++		request->controls().merge(data->startControls_);
+ 
+ 	/*
+ 	 * The simple pipeline has no hardware request queue for ancillary devices.
+@@ -1790,6 +1811,9 @@ int SimplePipelineHandler::queueRequestDevice(Camera *camera, Request *request)
+ 			data->swIsp_->queueRequest(request->sequence(), request->controls());
+ 	}
+ 
++	if (applyStartControls)
++		data->startControls_.clear();
++
+ 	return 0;
  }
  
 diff --git a/src/libcamera/software_isp/software_isp.cpp b/src/libcamera/software_isp/software_isp.cpp
