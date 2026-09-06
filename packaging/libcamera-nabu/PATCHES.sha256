@@ -9,4 +9,4 @@ c01281e7ffea4d3d28319e27367e452df3120963dfc8dd10caaa9cd087ab66eb  0003-sensor-ad
 6a597d1f9cfd27062dcb582b7ac82b2b449eecd22beca3f26f7d01e72e054623  0004-libcamera-Add-flash-helpers-for-pipeline-handlers.patch
 396f808f48e4f8d2f529993bf1a96fbd72276360ab9b745464237fe13bca8761  0005-pipeline-simple-expose-and-safely-reset-camera-flash.patch
 9aa2066c3e55286b58dcf40720860a7a46513e53f2279951f8d241f38afd556a  0006-software-isp-discard-stale-debayer-work-on-stop.patch
-7d37a9b90c52c13294dfdca20afcb76e2f8ecaba042cb906c393c5eec7e5b179  0007-ipa-soft-honor-frame-duration-limits.patch
+3a8e65486b315f8be952dc3885a4983dc9982999bbe2e194053536720e350f3b  0007-ipa-soft-honor-frame-duration-limits.patch

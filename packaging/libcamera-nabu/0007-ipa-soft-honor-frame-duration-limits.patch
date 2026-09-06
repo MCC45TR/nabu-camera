@@ -1,4 +1,4 @@
-From 8ac9006ef3060c9a0465d00dcd6548b7700186ce Mon Sep 17 00:00:00 2001
+From 7751dec4bc3dae346cc6b74f0e580596f6790653 Mon Sep 17 00:00:00 2001
 From: mcc45tr <mcc45tr@gmail.com>
 Date: Sun, 6 Sep 2026 08:36:27 +0300
 Subject: [PATCH] ipa: soft: honor frame duration limits
@@ -80,7 +80,7 @@ index 8ccfacb46..6c8244562 100644
  	} sensor;
  
 diff --git a/src/ipa/simple/soft_simple.cpp b/src/ipa/simple/soft_simple.cpp
-index 95cc63a4a..ae09dc8b2 100644
+index 95cc63a4a..94303230c 100644
 --- a/src/ipa/simple/soft_simple.cpp
 +++ b/src/ipa/simple/soft_simple.cpp
 @@ -58,7 +58,8 @@ public:
@@ -148,10 +148,10 @@ index 95cc63a4a..ae09dc8b2 100644
 +	context_.ctrlMap[&controls::FrameDurationLimits] = ControlInfo(
 +		context_.configuration.agc.frameDurationMin,
 +		context_.configuration.agc.frameDurationMax,
-+		Span<const int64_t, 2>{ {
++		ControlValue(Span<const int64_t, 2>{ {
 +			context_.configuration.agc.frameDurationDefault,
 +			context_.configuration.agc.frameDurationDefault,
-+		} });
++		} }));
 +	*ipaControls = ControlInfoMap(ControlInfoMap::Map(context_.ctrlMap),
 +				      controls::controls);
 +
