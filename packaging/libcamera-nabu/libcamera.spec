@@ -1,6 +1,6 @@
 Name:           libcamera
 Version:        0.7.2
-Release:        14.nabu1%{?dist}
+Release:        15.nabu1%{?dist}
 Summary:        A library to support complex camera ISPs
 License:        LGPL-2.1-or-later
 URL:            https://libcamera.org/
@@ -23,6 +23,7 @@ Patch12:        0007-ipa-soft-honor-frame-duration-limits.patch
 Patch13:        0008-qcam-expose-friendly-camera-names-and-torch.patch
 Patch14:        0009-qcam-integrate-optional-rear-autofocus-helper.patch
 Patch15:        0010-ipa-soft-retain-dynamic-sensor-control-metadata.patch
+Patch16:        0011-qcam-write-torch-mode-only-on-transitions.patch
 ExcludeArch:    s390x ppc64le
 
 BuildRequires:  gcc-c++
@@ -91,6 +92,7 @@ Command-line tools for libcamera.
 Summary: Graphical QCam application for %{name}
 License: GPL-2.0-or-later AND MIT
 Requires: %{name}%{?_isa} = %{version}-%{release}
+Recommends: nabu-camera-support >= 0.1.0-3.alpha
 %description qcam
 Graphical camera demonstration application.
 
@@ -158,6 +160,7 @@ grep -Fq 'return "Front Camera"' src/apps/qcam/cam_select_dialog.cpp
 grep -Fq 'controls::FlashModeTorch' src/apps/qcam/main_window.cpp
 grep -Fq 'findExecutable("nabu-autofocus")' src/apps/qcam/main_window.cpp
 grep -Fq 'ControlList ctrls(dynamicSensorInfoMap_)' src/ipa/simple/soft_simple.cpp
+grep -Fq 'torchUpdatePending_' src/apps/qcam/main_window.cpp
 
 %files
 %license COPYING.rst LICENSES/LGPL-2.1-or-later.txt
@@ -198,6 +201,11 @@ grep -Fq 'ControlList ctrls(dynamicSensorInfoMap_)' src/ipa/simple/soft_simple.c
 %{python3_sitearch}/*
 
 %changelog
+* Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-15.nabu1
+- Send torch controls only when the state changes instead of on every frame.
+- Keep QCam state synchronized with the pipeline's forced-off stop behavior.
+- Pull in the optional Nabu autofocus helper for QCam users.
+
 * Sun Sep 06 2026 mcc45tr <mcc45tr@gmail.com> - 0.7.2-14.nabu1
 - Offer the proven CN3927 sharpness scan from QCam on the rear camera.
 - Release and reacquire the camera around the optional autofocus helper.
